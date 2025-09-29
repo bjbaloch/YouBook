@@ -1,18 +1,20 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:final_year_project/side_bar_menu/logout_confirm.dart'; // logout popup import
-import 'package:final_year_project/Login/login_page.dart'; // direct login import
-import 'package:final_year_project/profile/account.dart'; // direct Account page import
+import 'package:final_year_project/side_bar_menu/logout_confirm.dart';
+import 'package:final_year_project/profile/account.dart';
 import 'package:final_year_project/notification/notification.dart';
+import 'package:final_year_project/my_booking/my_booking.dart';
+import 'package:final_year_project/manager_home/manager_home.dart';
+import 'package:final_year_project/support/help_support/help_support_page.dart';
+import 'package:final_year_project/color_schema/app_colors.dart';
 
 class AppSidebarDrawer extends StatefulWidget {
   const AppSidebarDrawer({
     super.key,
     required this.isDarkMode,
     required this.onThemeChanged,
-    this.selectedIndex = 0, // 0: Home, 1: Account, etc.
-    required this.onItemSelected,
+    this.selectedIndex = 0,
     this.onLogout,
     this.showVersion = true,
   });
@@ -20,7 +22,6 @@ class AppSidebarDrawer extends StatefulWidget {
   final bool isDarkMode;
   final ValueChanged<bool> onThemeChanged;
   final int selectedIndex;
-  final void Function(int index) onItemSelected;
   final VoidCallback? onLogout;
   final bool showVersion;
 
@@ -47,14 +48,6 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
   }
 
   @override
-  void didUpdateWidget(covariant AppSidebarDrawer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isDarkMode != widget.isDarkMode) {
-      _localIsDark = widget.isDarkMode;
-    }
-  }
-
-  @override
   void dispose() {
     _authSub?.cancel();
     super.dispose();
@@ -63,9 +56,7 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
   Future<void> _loadUser() async {
     try {
       final user = _sb.auth.currentUser;
-      setState(() {
-        _loading = true;
-      });
+      setState(() => _loading = true);
 
       if (user == null) {
         setState(() {
@@ -87,7 +78,6 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
             .select('full_name, avatar_url, email')
             .eq('id', user.id)
             .maybeSingle();
-
         if (data != null) {
           fullName = (data['full_name'] as String?)?.trim();
           avatarUrl = (data['avatar_url'] as String?)?.trim();
@@ -105,7 +95,7 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
         _avatarUrl = (avatarUrl != null && avatarUrl.isNotEmpty)
             ? avatarUrl
             : null;
-        _email = email ?? user.email; // fallback to auth.users
+        _email = email ?? user.email;
         _loading = false;
       });
     } catch (_) {
@@ -119,19 +109,38 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
     if (result == true) {
       try {
         await _sb.auth.signOut();
-      } catch (_) {
       } finally {
         if (!mounted) return;
         if (widget.onLogout != null) {
           widget.onLogout!();
-        } else {
-          Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-            (route) => false,
-          );
         }
       }
     }
+  }
+
+  PageRouteBuilder _smoothRoute(Widget page) {
+    return PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final fade = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeInOut,
+        );
+        final slide =
+            Tween<Offset>(
+              begin: const Offset(0.08, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+
+        return FadeTransition(
+          opacity: fade,
+          child: SlideTransition(position: slide, child: child),
+        );
+      },
+    );
   }
 
   Widget _header() {
@@ -145,7 +154,7 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Theme toggle row
+          // ✅ Theme toggle row
           Row(
             children: [
               InkWell(
@@ -153,27 +162,38 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
                 onTap: () {
                   setState(() => _localIsDark = !_localIsDark);
                   widget.onThemeChanged(_localIsDark);
+                  AppTheme.setDark(_localIsDark);
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(6.0),
-                  child: Icon(
-                    _localIsDark
-                        ? Icons.dark_mode_rounded
-                        : Icons.light_mode_rounded,
-                    color: cs.onPrimary,
-                    size: 20,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => RotationTransition(
+                      turns: anim,
+                      child: FadeTransition(opacity: anim, child: child),
+                    ),
+                    child: Icon(
+                      _localIsDark
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
+                      key: ValueKey(_localIsDark),
+                      color: cs.onPrimary,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 6),
-              Transform.scale(
-                scale: 0.9,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
                 child: Switch.adaptive(
+                  key: ValueKey(_localIsDark),
                   value: _localIsDark,
                   activeColor: cs.secondary,
                   onChanged: (v) {
                     setState(() => _localIsDark = v);
                     widget.onThemeChanged(v);
+                    AppTheme.setDark(v);
                   },
                 ),
               ),
@@ -205,16 +225,10 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
               const SizedBox(width: 10),
               Expanded(
                 child: _loading
-                    ? SizedBox(
+                    ? const SizedBox(
                         height: 36,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              cs.onPrimary,
-                            ),
-                          ),
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
                     : Column(
@@ -250,56 +264,30 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
     );
   }
 
-  Widget _tile({
+  Widget _navItem({
     required IconData icon,
     required String label,
-    required int index,
-    Color? iconColor,
+    required Widget page,
   }) {
-    final selected = widget.selectedIndex == index;
     final cs = Theme.of(context).colorScheme;
 
     return InkWell(
+      borderRadius: BorderRadius.circular(8),
       onTap: () {
         Navigator.of(context).pop();
-        if (index == 1) {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const AccountPage()));
-        } else if (index == 2) {
-          // ✅ Navigate to NotificationsPage
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const NotificationsPage()));
-        } else {
-          widget.onItemSelected(index);
-        }
+        Navigator.pushReplacement(context, _smoothRoute(page));
       },
-      splashColor: cs.primary.withOpacity(0.10),
-      highlightColor: cs.primary.withOpacity(0.06),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, color: iconColor ?? cs.onSurface.withOpacity(0.7)),
+            Icon(icon, color: cs.onSurface),
             const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: cs.onBackground,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              height: 6,
-              width: selected ? 6 : 0,
-              decoration: BoxDecoration(
-                color: cs.primary,
-                borderRadius: BorderRadius.circular(999),
+            Text(
+              label,
+              style: TextStyle(
+                color: cs.onBackground,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -312,74 +300,104 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Drawer(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      child: SafeArea(
-        child: Column(
-          children: [
-            _header(),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _tile(icon: Icons.home_rounded, label: 'Home', index: 0),
-                  _tile(icon: Icons.person_rounded, label: 'Account', index: 1),
-                  _tile(
-                    icon: Icons.notifications_none_rounded,
-                    label: 'Notifications',
-                    index: 2,
-                  ),
-                  _tile(
-                    icon: Icons.card_travel_rounded,
-                    label: 'Booking',
-                    index: 3,
-                  ),
-                  _tile(
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: 'Wallet',
-                    index: 4,
-                  ),
-                  _tile(
-                    icon: Icons.support_agent_rounded,
-                    label: 'Support',
-                    index: 5,
-                  ),
-                  InkWell(
-                    onTap: _confirmAndLogout,
-                    splashColor: cs.primary.withOpacity(0.1),
-                    highlightColor: cs.primary.withOpacity(0.05),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+      child: Drawer(
+        backgroundColor: cs.background, // ✅ Same background as other pages
+        child: SafeArea(
+          child: Column(
+            children: [
+              _header(),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    Card(
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
+                      elevation: 2,
+                      child: Column(
                         children: [
-                          Icon(Icons.logout_rounded, color: cs.error),
-                          const SizedBox(width: 14),
-                          Text(
-                            'Logout',
-                            style: TextStyle(color: cs.onBackground),
+                          _navItem(
+                            icon: Icons.home_rounded,
+                            label: 'Home',
+                            page: const ManagerHome(),
+                          ),
+                          _navItem(
+                            icon: Icons.person_rounded,
+                            label: 'Account',
+                            page: const AccountPage(),
+                          ),
+                          _navItem(
+                            icon: Icons.notifications_none_rounded,
+                            label: 'Notifications',
+                            page: const NotificationsPage(),
+                          ),
+                          _navItem(
+                            icon: Icons.card_travel_rounded,
+                            label: 'Booking',
+                            page: const MyBookingPage(),
+                          ),
+                          _navItem(
+                            icon: Icons.account_balance_wallet_outlined,
+                            label: 'Wallet',
+                            page: const Center(
+                              child: Text("Wallet Page Placeholder"),
+                            ),
+                          ),
+                          _navItem(
+                            icon: Icons.support_agent_rounded,
+                            label: 'Support',
+                            page: const HelpSupportPage(),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (widget.showVersion)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10, top: 6),
-                child: Text(
-                  'Version',
-                  style: TextStyle(
-                    color: cs.onBackground.withOpacity(0.6),
-                    fontSize: 12,
-                  ),
+                    const SizedBox(height: 10),
+                    // ✅ Logout styled same as upper card
+                    Card(
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: _confirmAndLogout,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout_rounded, color: cs.error),
+                              const SizedBox(width: 14),
+                              Text('Logout', style: TextStyle(color: cs.error)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
+              if (widget.showVersion)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10, top: 6),
+                  child: Text(
+                    'Version',
+                    style: TextStyle(
+                      color: cs.onBackground.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

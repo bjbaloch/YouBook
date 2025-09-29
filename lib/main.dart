@@ -30,28 +30,36 @@ class YouBook extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: AppTheme.mode,
       builder: (context, mode, _) {
+        final lightTheme = AppTheme.light.copyWith(
+          textTheme: AppTheme.light.textTheme.apply(fontFamily: 'Roboto'),
+          primaryTextTheme: AppTheme.light.primaryTextTheme.apply(
+            fontFamily: 'Roboto',
+          ),
+        );
+
+        final darkTheme = AppTheme.dark.copyWith(
+          textTheme: AppTheme.dark.textTheme.apply(fontFamily: 'Roboto'),
+          primaryTextTheme: AppTheme.dark.primaryTextTheme.apply(
+            fontFamily: 'Roboto',
+          ),
+        );
+
+        final themeData = mode == ThemeMode.dark ? darkTheme : lightTheme;
+
         return MaterialApp(
           title: 'YOUBOOK',
           debugShowCheckedModeBanner: false,
           navigatorKey: navigatorKey,
-          theme: AppTheme.light.copyWith(
-            textTheme: AppTheme.light.textTheme.apply(fontFamily: 'Roboto'),
-            primaryTextTheme: AppTheme.light.primaryTextTheme.apply(
-              fontFamily: 'Roboto',
-            ),
-          ),
-          darkTheme: AppTheme.dark.copyWith(
-            textTheme: AppTheme.dark.textTheme.apply(fontFamily: 'Roboto'),
-            primaryTextTheme: AppTheme.dark.primaryTextTheme.apply(
-              fontFamily: 'Roboto',
-            ),
-          ),
+          theme: lightTheme,
+          darkTheme: darkTheme,
           themeMode: mode,
-          home: const WelcomePage(),
-          // Include route for '/login' if used by logout flow
-          routes: {
-            '/login': (context) => const LoginPage(), // or LoginPage()
-          },
+          home: AnimatedTheme(
+            data: themeData,
+            duration: const Duration(milliseconds: 400), // smooth transition
+            curve: Curves.easeInOut,
+            child: const WelcomePage(),
+          ),
+          routes: {'/login': (context) => const LoginPage()},
         );
       },
     );

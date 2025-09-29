@@ -6,7 +6,7 @@ import 'forget_password_popup.dart';
 import 'package:final_year_project/Signup/signup_page.dart';
 import 'package:final_year_project/color_schema/app_colors.dart';
 import 'package:final_year_project/manager_home/manager_home.dart';
-import 'package:final_year_project/customer_home/customer_home.dart';
+//import 'package:final_year_project/customer_home/customer_home.dart';
 
 /// ─────────────────────────────────────────────────────────────
 /// LOGIN PAGE
@@ -122,10 +122,10 @@ class _LoginPageState extends State<LoginPage> {
           );
         } else {
           // Default to customer/passenger home
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const CustomerHome()),
-            (route) => false,
-          );
+          // Navigator.of(context).pushAndRemoveUntil(
+          //   MaterialPageRoute(builder: (_) => const CustomerHome()),
+          //   (route) => false,
+          // );
         }
         // ─────────────────────────────────────────────────────────────
       }

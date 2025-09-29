@@ -1,9 +1,7 @@
-import 'dart:io'; // for InternetAddress + SocketException
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_year_project/manager_home/manager_home.dart';
-import 'package:final_year_project/customer_home/customer_home.dart';
+// import 'package:final_year_project/customer_home/customer_home.dart';
 
 class RoleSelectionPage extends StatefulWidget {
   const RoleSelectionPage({super.key});
@@ -16,7 +14,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
     with TickerProviderStateMixin {
   late final AnimationController _master; // drives staggered images + texts
   late final AnimationController _panelCtrl; // drives bottom panel slide
-  late final AnimationController _decorCtrl; // NEW: background floating boxes
+  late final AnimationController _decorCtrl; // background floating boxes
 
   // Panel slide up
   late final Animation<Offset> _panelSlide;
@@ -36,13 +34,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
   late final List<AnimationController> _tapCtrls;
   late final List<Animation<double>> _tapScales;
 
-  final supabase = Supabase.instance.client;
-
   // 1-second loading flags for buttons
   bool _loadingManager = false;
   bool _loadingPassenger = false;
 
-  // Editable placeholders for your images (provide 6)
+  // Editable placeholders for your images
   final List<String> imageAssets = const [
     'assets/bus/bus1.jpg',
     'assets/van/van1.jpeg',
@@ -56,13 +52,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
   void initState() {
     super.initState();
 
-    // Master controller for staggered elements (images + buttons)
     _master = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..forward();
 
-    // Bottom panel slide-up
     _panelCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -73,7 +67,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _panelCtrl, curve: Curves.easeOutCubic));
 
-    // Buttons animation intervals (within master timeline)
     _btn1Fade = CurvedAnimation(
       parent: _master,
       curve: const Interval(0.55, 0.85, curve: Curves.easeOut),
@@ -95,7 +88,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
       ),
     );
 
-    // Stagger for each image tile
     _tileFades = List.generate(_tileCount, (i) {
       final start = 0.05 + i * 0.07;
       final end = (start + 0.35).clamp(0.0, 1.0);
@@ -115,7 +107,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
       );
     });
 
-    // NEW: per-tile tap controllers for press pulse (1.0 -> 0.95 -> 1.0)
     _tapCtrls = List.generate(
       _tileCount,
       (_) => AnimationController(
@@ -133,7 +124,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
         )
         .toList();
 
-    // NEW: Background decor controller (floating boxes)
     _decorCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -149,38 +139,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
       c.dispose();
     }
     super.dispose();
-  }
-
-  // ====== Minimal additions below for connectivity + back blocking ======
-
-  Future<bool> _hasInternet() async {
-    try {
-      final res = await InternetAddress.lookup(
-        'example.com',
-      ).timeout(const Duration(seconds: 2));
-      return res.isNotEmpty && res.first.rawAddress.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  bool _looksLikeNetworkError(dynamic e) {
-    if (e is SocketException) return true;
-    final m = e.toString().toLowerCase();
-    return m.contains('network') ||
-        m.contains('host lookup') ||
-        m.contains('failed host lookup') ||
-        m.contains('socket') ||
-        m.contains('timed out') ||
-        m.contains('xmlhttprequest') ||
-        m.contains('failed to fetch');
-  }
-
-  void _showSnack(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
   // Handle button press: show 1s loading, then proceed
@@ -205,52 +163,18 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
       }
     });
 
-    // Proceed with existing logic (network check, role update, navigation)
-    _selectRoleAndGo(role);
-  }
-
-  // Store chosen role (unchanged) + DIRECT NAVIGATION (no popups)
-  Future<void> _selectRoleAndGo(String role) async {
-    // Block if offline
-    if (!await _hasInternet()) {
-      _showSnack("No internet connection. Please check your network.");
-      return;
-    }
-
-    // Upsert role to ensure the row exists (handles users created before trigger)
-    try {
-      final user = supabase.auth.currentUser;
-      if (user != null) {
-        await supabase.from('profiles').upsert({
-          'id': user.id,
-          'email': user.email?.toLowerCase(),
-          'role': role.toLowerCase().trim(),
-          'updated_at': DateTime.now().toIso8601String(),
-        }).select();
-      }
-    } catch (e) {
-      if (_looksLikeNetworkError(e)) {
-        _showSnack("No internet connection. Please check your network.");
-        return; // do not proceed if network is down
-      } else {
-        debugPrint('Role upsert failed (non-network): $e');
-      }
-    }
-
-    // DIRECT NAVIGATION (no dialog)
-    if (!mounted) return;
+    // DIRECT NAVIGATION (no Supabase, no internet check)
     if (role == 'manager') {
       Navigator.of(
         context,
       ).pushAndRemoveUntil(_route(const ManagerHome()), (r) => false);
     } else {
-      Navigator.of(
-        context,
-      ).pushAndRemoveUntil(_route(const CustomerHome()), (r) => false);
+      // Navigator.of(context)
+      //     .pushAndRemoveUntil(_route(const CustomerHome()), (r) => false);
     }
   }
 
-  // Smooth transition route (updated)
+  // Smooth transition route
   PageRoute _route(Widget page) => PageRouteBuilder(
     transitionDuration: const Duration(milliseconds: 480),
     reverseTransitionDuration: const Duration(milliseconds: 380),
@@ -262,7 +186,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
         reverseCurve: Curves.easeInCubic,
       );
 
-      // Subtle fade + slight slide + tiny scale for smoother feel
       final fade = Tween<double>(begin: 0.0, end: 1.0).animate(curved);
       final slide = Tween<Offset>(
         begin: const Offset(0, 0.03),
@@ -280,7 +203,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
     },
   );
 
-  // Trigger the tap pulse for a tile
   Future<void> _onTileTap(int index) async {
     try {
       await _tapCtrls[index].forward();
@@ -291,7 +213,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
     }
   }
 
-  // Tile widget with rounded corners and placeholder image
   Widget _imageTile(int index) {
     final fade = _tileFades[index];
     final scale = _tileScales[index];
@@ -300,9 +221,9 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
     return FadeTransition(
       opacity: fade,
       child: ScaleTransition(
-        scale: scale, // initial stagger scale
+        scale: scale,
         child: ScaleTransition(
-          scale: _tapScales[index], // real-time tap pulse
+          scale: _tapScales[index],
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: Material(
@@ -314,22 +235,13 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: Container(
-                    color: cs.surface, // fallback color
+                    color: cs.surface,
                     foregroundDecoration: BoxDecoration(
                       image: DecorationImage(
                         image: AssetImage(imageAssets[index]),
                         fit: BoxFit.cover,
                       ),
                     ),
-                    child: imageAssets[index].isEmpty
-                        ? Center(
-                            child: Icon(
-                              Icons.image,
-                              size: 36,
-                              color: cs.onSurface.withOpacity(0.7),
-                            ),
-                          )
-                        : null,
                   ),
                 ),
               ),
@@ -340,7 +252,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
     );
   }
 
-  // Optional subtle gradient bg
   LinearGradient _animatedGradient(double t, Color bg) {
     final phase = (math.sin(t * 2 * math.pi) + 1) / 2;
     return LinearGradient(
@@ -350,7 +261,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
     );
   }
 
-  // NEW: Animated background floating boxes painter
   Widget _animatedBoxes(Color color) {
     return AnimatedBuilder(
       animation: _decorCtrl,
@@ -377,7 +287,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
             backgroundColor: cs.background,
             body: Stack(
               children: [
-                // Background gradient + floating boxes
                 Container(
                   decoration: BoxDecoration(
                     gradient: _animatedGradient(0, cs.background),
@@ -390,7 +299,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Column(
                       children: [
-                        // 2-column grid of 6 rounded images
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -410,7 +318,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                   ),
                 ),
 
-                // Bottom green panel slides up
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: SlideTransition(
@@ -430,7 +337,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Manager button
                             FadeTransition(
                               opacity: _btn1Fade,
                               child: ScaleTransition(
@@ -470,8 +376,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                               ),
                             ),
                             const SizedBox(height: 14),
-
-                            // Guest button
                             FadeTransition(
                               opacity: _btn2Fade,
                               child: ScaleTransition(
@@ -511,8 +415,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
                               ),
                             ),
                             const SizedBox(height: 18),
-
-                            // Blurb
                             Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
@@ -539,7 +441,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage>
   }
 }
 
-// Painter for floating boxes background
 class _BoxesPainter extends CustomPainter {
   _BoxesPainter(this.t, this.color);
   final double t;
@@ -551,14 +452,13 @@ class _BoxesPainter extends CustomPainter {
       ..color = color.withOpacity(0.06)
       ..style = PaintingStyle.fill;
 
-    // Draw a few animated rounded boxes
     final boxes = <RRect>[];
     for (int i = 0; i < 5; i++) {
       final phase = (t + i * 0.2) % 1.0;
       final width = size.width * (0.18 + (i % 3) * 0.03);
       final height = width * 0.6;
       final x = (size.width * (0.1 + (i * 0.2))) % (size.width - width);
-      final y = size.height * (1.0 - phase) - height; // float upwards
+      final y = size.height * (1.0 - phase) - height;
       final rect = RRect.fromRectAndRadius(
         Rect.fromLTWH(x, y, width, height),
         const Radius.circular(16),

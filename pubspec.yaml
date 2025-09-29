@@ -55,6 +55,7 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
+# user selection vehicle images
     - assets/yb_logo.png
     - assets/bus/bus1.jpg
     - assets/van/van1.jpeg
@@ -62,6 +63,26 @@ flutter:
     - assets/van/van2.jpg
     - assets/bus/bus3.jpg
     - assets/van/van3.jpg
+
+# vehicle icons
+    - assets/bus/bus_icon.png
+    - assets/van/van_icon.png 
+# notification icon
+    - assets/notification/notification_icon.png
+
+# support tile icons
+    - assets/support/contact_us_icon.png
+    - assets/support/faqs_icon.png
+    - assets/support/t_c_icon.png
+    - assets/support/p_p_icon.png
+    - assets/support/about_app_icon.png
+    - assets/support/invite_friend_icon.png
+    - assets/support/rate_app_icon.png
+    - assets/support/feedback_icon.png
+    - assets/support/facebook_icon.png
+    - assets/support/whatsapp_icon.png
+    - assets/support/instagram_icon.png
+    - assets/support/tiktok_icon.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

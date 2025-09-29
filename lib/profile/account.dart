@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:final_year_project/profile/update_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_year_project/side_bar_menu/logout_confirm.dart';
-import 'package:final_year_project/profile/update_profile.dart';
+import 'package:final_year_project/manager_home/manager_home.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -32,54 +32,17 @@ class _AccountPageState extends State<AccountPage> {
   bool _loading = false;
   StreamSubscription<AuthState>? _authSub;
 
-  bool _isOnline = true;
-  Timer? _netTimer;
-
   @override
   void initState() {
     super.initState();
     _loadUser();
     _authSub = _sb.auth.onAuthStateChange.listen((_) => _loadUser());
-    _startConnectivityMonitor();
   }
 
   @override
   void dispose() {
-    _netTimer?.cancel();
     _authSub?.cancel();
     super.dispose();
-  }
-
-  Future<bool> _hasInternet() async {
-    try {
-      final res = await InternetAddress.lookup(
-        'example.com',
-      ).timeout(const Duration(seconds: 2));
-      return res.isNotEmpty && res.first.rawAddress.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  void _startConnectivityMonitor() {
-    _netTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      final ok = await _hasInternet();
-      if (!mounted) return;
-      if (ok != _isOnline) {
-        setState(() => _isOnline = ok);
-        if (!ok) {
-          ScaffoldMessenger.of(context)
-            ..removeCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'No internet connection. Please check your network.',
-                ),
-              ),
-            );
-        }
-      }
-    });
   }
 
   Future<void> _loadUser() async {
@@ -157,7 +120,7 @@ class _AccountPageState extends State<AccountPage> {
         _city = city;
         _stateProvince = stateProvince;
         _country = country;
-        _email = email ?? user.email; // ✅ pull from profiles first
+        _email = email ?? user.email;
         _loading = false;
       });
     } catch (_) {
@@ -181,19 +144,16 @@ class _AccountPageState extends State<AccountPage> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onPrimary),
           onPressed: () {
-            if (!_isOnline) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No internet connection.')),
-              );
-              return;
-            }
-            Navigator.pop(context);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const ManagerHome()),
+            );
           },
         ),
         centerTitle: true,
         title: Text(
           'Account',
-          style: TextStyle(color: cs.onPrimary, fontWeight: FontWeight.w600),
+          style: TextStyle(color: cs.onPrimary, fontSize: 20),
         ),
       ),
     );
@@ -287,12 +247,6 @@ class _AccountPageState extends State<AccountPage> {
             alignment: Alignment.centerRight,
             child: ElevatedButton(
               onPressed: () {
-                if (!_isOnline) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No internet connection.')),
-                  );
-                  return;
-                }
                 Navigator.of(context)
                     .push(
                       MaterialPageRoute(
@@ -362,6 +316,7 @@ class _AccountPageState extends State<AccountPage> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? customColor,
   }) {
     final cs = Theme.of(context).colorScheme;
     return Material(
@@ -371,26 +326,18 @@ class _AccountPageState extends State<AccountPage> {
       shadowColor: cs.onSurface.withOpacity(0.5),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          if (!_isOnline) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('No internet connection.')),
-            );
-            return;
-          }
-          onTap();
-        },
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: cs.onSurface.withOpacity(0.85)),
+              Icon(icon, color: customColor ?? cs.onSurface.withOpacity(0.85)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    color: cs.onSurface,
+                    color: customColor ?? cs.onSurface,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -437,22 +384,13 @@ class _AccountPageState extends State<AccountPage> {
                           Navigator.pushNamed(context, '/changePassword'),
                     ),
                     const SizedBox(height: 10),
+                    // 🔴 Logout tile with cs.error color
                     _actionTile(
                       icon: Icons.logout_rounded,
                       label: 'Log out',
+                      customColor: cs.error,
                       onTap: () async {
-                        final confirm = await showLogoutDialog(context);
-                        if (confirm == true) {
-                          try {
-                            await _sb.auth.signOut();
-                          } catch (_) {
-                          } finally {
-                            if (!mounted) return;
-                            Navigator.of(
-                              context,
-                            ).pushNamedAndRemoveUntil('/login', (r) => false);
-                          }
-                        }
+                        await showLogoutDialog(context);
                       },
                     ),
                   ],
