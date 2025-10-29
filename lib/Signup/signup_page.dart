@@ -648,7 +648,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ? CircularProgressIndicator(color: cs.onSecondary)
                       : Text(
                           "Sign Up",
-                          style: TextStyle(fontSize: 18, color: cs.onSecondary),
+                          style: TextStyle(fontSize: 16, color: cs.onSecondary),
                         ),
                 ),
               ),
@@ -673,7 +673,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         )
                       : Text(
                           "Confirmed, continue",
-                          style: TextStyle(fontSize: 14, color: cs.onSecondary),
+                          style: TextStyle(fontSize: 16, color: cs.onSecondary),
                         ),
                 ),
               ),
@@ -712,6 +712,7 @@ class _SignUpPageState extends State<SignUpPage> {
     FocusNode? focusNode,
   }) {
     final cs = Theme.of(context).colorScheme;
+
     return TextFormField(
       focusNode: focusNode,
       controller: controller,
@@ -721,13 +722,26 @@ class _SignUpPageState extends State<SignUpPage> {
       cursorRadius: const Radius.circular(2),
       style: TextStyle(color: cs.onPrimary),
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: cs.onPrimary.withOpacity(0.75)),
-        hintText: hint,
-        hintStyle: TextStyle(color: cs.onPrimary.withOpacity(0.75)),
+        prefixIcon: Icon(icon, color: cs.onPrimary.withOpacity(0.85)),
+
+        // ✅ Floating label behaves like previous code
+        labelText: hint,
+        labelStyle: TextStyle(color: AppColors.textWhite),
+        floatingLabelStyle: TextStyle(
+          color: AppColors.textWhite,
+          fontWeight: FontWeight.w600,
+        ),
+
         filled: true,
-        fillColor: Colors.transparent,
+        fillColor: AppColors.transparent,
         errorText: serverError,
         errorMaxLines: 2,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(color: borderColor),
@@ -761,6 +775,7 @@ class _SignUpPageState extends State<SignUpPage> {
     String? Function(String?)? validator,
   ) {
     final cs = Theme.of(context).colorScheme;
+
     return TextFormField(
       controller: controller,
       obscureText: isPassword ? _obscurePassword : _obscureConfirmPassword,
@@ -770,7 +785,7 @@ class _SignUpPageState extends State<SignUpPage> {
       cursorRadius: const Radius.circular(2),
       style: TextStyle(color: cs.onPrimary),
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.lock, color: cs.onPrimary.withOpacity(0.75)),
+        prefixIcon: Icon(Icons.lock, color: cs.onPrimary.withOpacity(0.85)),
         suffixIcon: IconButton(
           icon: Icon(
             isPassword
@@ -790,10 +805,23 @@ class _SignUpPageState extends State<SignUpPage> {
             });
           },
         ),
-        hintText: hint,
-        hintStyle: TextStyle(color: cs.onPrimary.withOpacity(0.75)),
+
+        // ✅ Floating label style (same behavior)
+        labelText: hint,
+        labelStyle: TextStyle(color: AppColors.textWhite),
+        floatingLabelStyle: TextStyle(
+          color: AppColors.textWhite,
+          fontWeight: FontWeight.w600,
+        ),
+
         filled: true,
         fillColor: Colors.transparent,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
+
         enabledBorder: OutlineInputBorder(
           borderRadius: const BorderRadius.all(Radius.circular(30)),
           borderSide: BorderSide(color: cs.secondary),

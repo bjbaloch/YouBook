@@ -1,10 +1,13 @@
 import 'dart:async';
-import 'package:final_year_project/profile/update_profile.dart';
+import 'package:final_year_project/profile/account/update_profile.dart';
+import 'package:final_year_project/profile/change_phone_number/change_phn.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_year_project/side_bar_menu/logout_confirm.dart';
 import 'package:final_year_project/manager_home/manager_home.dart';
+import 'package:final_year_project/profile/change_email/change_email.dart'; // ✅ Import dialog
+import 'package:final_year_project/profile/change_password/change_password.dart'; // ✅ Import ChangePasswordPage
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -368,20 +371,30 @@ class _AccountPageState extends State<AccountPage> {
                     _actionTile(
                       icon: Icons.phone_iphone_rounded,
                       label: 'Change Phone number',
-                      onTap: () => Navigator.pushNamed(context, '/changePhone'),
+                      onTap: () {
+                        ChangePhoneDialog.show(context);
+                      }, // change phone number
                     ),
                     const SizedBox(height: 10),
                     _actionTile(
                       icon: Icons.alternate_email_rounded,
                       label: 'Change Email Address',
-                      onTap: () => Navigator.pushNamed(context, '/changeEmail'),
+                      onTap: () {
+                        ChangeEmailDialog.show(context); // ✅ Show dialog
+                      },
                     ),
                     const SizedBox(height: 10),
                     _actionTile(
                       icon: Icons.lock_outline_rounded,
                       label: 'Change Password',
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/changePassword'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ChangePasswordPage(),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
                     // 🔴 Logout tile with cs.error color

@@ -33,6 +33,7 @@ dependencies:
   supabase_flutter: ^2.10.0  # latest version
   shared_preferences: ^2.5.3
   image_picker: ^1.2.0
+  url_launcher: ^6.3.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -83,7 +84,17 @@ flutter:
     - assets/support/whatsapp_icon.png
     - assets/support/instagram_icon.png
     - assets/support/tiktok_icon.png
+    - assets/support/email_icon.png
 
+  # otp
+    - assets/otp/otp.png
+  # security
+    - assets/password/password_icon.png
+
+  #topup wallet
+    - assets/topup_accounts/easypaisa.png
+    - assets/topup_accounts/jazzcash_logo.png
+    - assets/topup_accounts/visa_card.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

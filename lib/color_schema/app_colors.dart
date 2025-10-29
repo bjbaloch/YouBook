@@ -12,6 +12,7 @@ class AppColors {
   static const Color textWhite = Color(0xFFFFFFFF);
   static const Color textBlack = Color(0xFF000000);
   static const Color textBlack54 = Color(0x8A000000);
+  static const Color blue = Color.fromRGBO(33, 150, 243, 1);
 
   static const Color hintWhite = Color.fromARGB(179, 255, 255, 255);
   static const Color errorRed = Color(0xFFFF0000);
@@ -39,6 +40,7 @@ class AppColors {
 
   static const Color circleGreen = Color(0xFF12A21C);
   static const Color textOnCircle = Color(0xFFFFFFFF);
+  static const Color transparent = Color.fromRGBO(0, 0, 0, 0);
 }
 
 /// App-wide theme controller + ThemeData using your color schema.

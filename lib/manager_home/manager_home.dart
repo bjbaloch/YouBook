@@ -1,13 +1,15 @@
 // 📂 manager_home.dart
+import 'package:final_year_project/wallet_section/youbook_wallet/wallet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // for SystemUiOverlayStyle
+import 'package:flutter/services.dart';
 import 'package:final_year_project/color_schema/app_colors.dart';
 import 'package:final_year_project/advertisement/advertisement.dart';
 import 'package:final_year_project/side_bar_menu/side_bar_menu.dart';
-import 'package:final_year_project/profile/account.dart';
+import 'package:final_year_project/profile/account/account.dart';
 import 'package:final_year_project/notification/notification.dart';
 import 'package:final_year_project/my_booking/my_booking.dart';
-import 'package:final_year_project/support/help_support/help_support_page.dart'; // ✅ Support page import
+import 'package:final_year_project/support/help_support/help_support_page.dart';
+import 'package:final_year_project/add_service/add_service_page.dart';
 
 class ManagerHome extends StatefulWidget {
   final double appBarHeight;
@@ -54,7 +56,7 @@ class _ManagerHomeState extends State<ManagerHome>
 
     _introCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
+      duration: const Duration(milliseconds: 280), // ⚡ Faster animation
     );
     _introFade = CurvedAnimation(
       parent: _introCtrl,
@@ -71,6 +73,29 @@ class _ManagerHomeState extends State<ManagerHome>
   void dispose() {
     _introCtrl.dispose();
     super.dispose();
+  }
+
+  // Smooth page transition helper
+  Route _smoothTransition(Widget page) {
+    return PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 280), // ⚡ Faster
+      reverseTransitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const curve = Curves.easeOutCubic;
+        final tween = Tween(
+          begin: const Offset(0.05, 0),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: curve));
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          ),
+        );
+      },
+    );
   }
 
   Widget _youBookTitle() {
@@ -129,10 +154,7 @@ class _ManagerHomeState extends State<ManagerHome>
             child: InkWell(
               borderRadius: BorderRadius.circular(30),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AccountPage()),
-                );
+                Navigator.push(context, _smoothTransition(const AccountPage()));
               },
               child: Row(
                 children: [
@@ -182,7 +204,12 @@ class _ManagerHomeState extends State<ManagerHome>
             margin: const EdgeInsets.symmetric(horizontal: 20),
           ),
           TextButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                _smoothTransition(const ServicesPage()),
+              ); // ✅ Added
+            },
             icon: Icon(
               Icons.add_circle,
               color: Theme.of(context).colorScheme.secondary,
@@ -234,7 +261,6 @@ class _ManagerHomeState extends State<ManagerHome>
     );
   }
 
-  // ✅ Bottom nav with highlighted line for Home
   Widget _bottomNav() {
     final cs = Theme.of(context).colorScheme;
     return ClipRRect(
@@ -247,29 +273,26 @@ class _ManagerHomeState extends State<ManagerHome>
         type: BottomNavigationBarType.fixed,
         selectedItemColor: cs.onPrimary,
         unselectedItemColor: cs.onPrimary.withOpacity(0.9),
-        currentIndex: 0, // Home highlighted
+        currentIndex: 0,
         onTap: (i) {
           if (i == 0) return;
           switch (i) {
             case 1:
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const MyBookingPage()),
+                _smoothTransition(const MyBookingPage()),
               );
               break;
             case 2:
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const HelpSupportPage()),
+                _smoothTransition(const HelpSupportPage()),
               );
               break;
             case 3:
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const Center(child: Text("Wallet Page Placeholder")),
-                ),
+                _smoothTransition(const WalletPage()),
               );
               break;
           }
@@ -341,7 +364,7 @@ class _ManagerHomeState extends State<ManagerHome>
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const NotificationsPage()),
+              _smoothTransition(const NotificationsPage()),
             );
           },
           tooltip: 'Notifications',

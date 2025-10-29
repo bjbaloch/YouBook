@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:final_year_project/wallet_section/youbook_wallet/wallet.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_year_project/side_bar_menu/logout_confirm.dart';
-import 'package:final_year_project/profile/account.dart';
+import 'package:final_year_project/profile/account/account.dart';
 import 'package:final_year_project/notification/notification.dart';
 import 'package:final_year_project/my_booking/my_booking.dart';
 import 'package:final_year_project/manager_home/manager_home.dart';
@@ -344,9 +345,7 @@ class _AppSidebarDrawerState extends State<AppSidebarDrawer> {
                           _navItem(
                             icon: Icons.account_balance_wallet_outlined,
                             label: 'Wallet',
-                            page: const Center(
-                              child: Text("Wallet Page Placeholder"),
-                            ),
+                            page: const WalletPage(),
                           ),
                           _navItem(
                             icon: Icons.support_agent_rounded,

@@ -2,6 +2,7 @@ import 'package:final_year_project/support/about_app/about_app.dart';
 import 'package:final_year_project/support/faqs/faqs.dart';
 import 'package:final_year_project/support/privacy_policy/privacy_policy.dart';
 import 'package:final_year_project/support/terms_condition/terms_conditions.dart';
+import 'package:final_year_project/support/contact us/contact_us.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:final_year_project/support/feedback/feedback_popup.dart'; // ✅ Correct Feedback popup import
@@ -77,94 +78,96 @@ class HelpSupportPage extends StatelessWidget {
     );
   }
 
+  Future<bool> _onWillPop(BuildContext context) async {
+    Navigator.pushReplacement(context, _smoothRoute(const ManagerHome()));
+    return false; // Prevents default system back action
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: cs.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(45),
-        child: AppBar(
-          toolbarHeight: 45,
-          backgroundColor: cs.primary,
-          elevation: 0,
-          systemOverlayStyle: const SystemUiOverlayStyle(
-            statusBarBrightness: Brightness.dark,
-            statusBarIconBrightness: Brightness.light,
-          ),
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onPrimary),
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).pushReplacement(_smoothRoute(const ManagerHome()));
-            },
-          ),
-          centerTitle: true,
-          title: Text(
-            "Help & Support",
-            style: TextStyle(
-              color: cs.onPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 20,
+    return WillPopScope(
+      onWillPop: () => _onWillPop(context),
+      child: Scaffold(
+        backgroundColor: cs.background,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(45),
+          child: AppBar(
+            toolbarHeight: 45,
+            backgroundColor: cs.primary,
+            elevation: 0,
+            systemOverlayStyle: const SystemUiOverlayStyle(
+              statusBarBrightness: Brightness.dark,
+              statusBarIconBrightness: Brightness.light,
+            ),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded, color: cs.onPrimary),
+              onPressed: () {
+                Navigator.of(
+                  context,
+                ).pushReplacement(_smoothRoute(const ManagerHome()));
+              },
+            ),
+            centerTitle: true,
+            title: Text(
+              "Help & Support",
+              style: TextStyle(
+                color: cs.onPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
             ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 10),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                "We are here to help you !",
-                style: TextStyle(fontWeight: FontWeight.w500),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  "We are here to help you !",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            // ✅ Support tiles with centralized image paths
-            // contact us
-            _supportTile(context, "Contact Us", AppImages.contact, () {}),
+              // ✅ Support tiles with centralized image paths
+              _supportTile(context, "Contact Us", AppImages.contact, () {
+                Navigator.of(context).push(_smoothRoute(const ContactUsPage()));
+              }),
 
-            //FAQs
-            _supportTile(context, "FAQs", AppImages.faq, () {
-              Navigator.of(context).push(_smoothRoute(const FAQsPage()));
-            }),
+              _supportTile(context, "FAQs", AppImages.faq, () {
+                Navigator.of(context).push(_smoothRoute(const FAQsPage()));
+              }),
 
-            // terms and conditions
-            _supportTile(context, "Terms & Conditions", AppImages.terms, () {
-              Navigator.of(
-                context,
-              ).push(_smoothRoute(const TermsAndConditionsPage()));
-            }),
+              _supportTile(context, "Terms & Conditions", AppImages.terms, () {
+                Navigator.of(
+                  context,
+                ).push(_smoothRoute(const TermsAndConditionsPage()));
+              }),
 
-            //privacy policy
-            _supportTile(context, "Privacy Policy", AppImages.privacy, () {
-              Navigator.of(
-                context,
-              ).push(_smoothRoute(const PrivacyPolicyPage()));
-            }),
+              _supportTile(context, "Privacy Policy", AppImages.privacy, () {
+                Navigator.of(
+                  context,
+                ).push(_smoothRoute(const PrivacyPolicyPage()));
+              }),
 
-            // About app
-            _supportTile(context, "About App", AppImages.about, () {
-              Navigator.of(context).push(_smoothRoute(const AboutAppPage()));
-            }),
+              _supportTile(context, "About App", AppImages.about, () {
+                Navigator.of(context).push(_smoothRoute(const AboutAppPage()));
+              }),
 
-            //invite friend
-            _supportTile(context, "Invite Friend", AppImages.invite, () {}),
+              _supportTile(context, "Invite Friend", AppImages.invite, () {}),
 
-            // rate app
-            _supportTile(context, "Rate App", AppImages.rate, () {}),
+              _supportTile(context, "Rate App", AppImages.rate, () {}),
 
-            // feedback popup function
-            _supportTile(context, "Feedback", AppImages.feedback, () {
-              showFeedbackPopup(context);
-            }),
-          ],
+              _supportTile(context, "Feedback", AppImages.feedback, () {
+                showFeedbackPopup(context);
+              }),
+            ],
+          ),
         ),
       ),
     );

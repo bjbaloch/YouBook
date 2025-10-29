@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:final_year_project/user_selection/user_selection.dart';
 import 'package:flutter/material.dart';
-//import 'package:final_year_project/Login/login_page.dart';
 import 'package:final_year_project/color_schema/app_colors.dart';
 
 class WelcomePage extends StatefulWidget {
@@ -16,12 +16,8 @@ class _WelcomePageState extends State<WelcomePage>
   late final AnimationController _pulseController;
   late final AnimationController _introController;
   late final AnimationController _bgController;
+  late final AnimationController _loadingController;
 
-  // Blink controller for the "Get Started" button (every 2s)
-  late final AnimationController _blinkController;
-  late final Animation<double> _blinkOpacity;
-
-  // Logo + text animations
   late final Animation<double> _scaleAnim;
   late final Animation<double> _logoGlowAnim;
   late final Animation<double> _welcomeOpacity;
@@ -29,9 +25,10 @@ class _WelcomePageState extends State<WelcomePage>
   late final Animation<double> _buttonOpacity;
   late final Animation<double> _buttonScale;
 
-  // Ripple-on-touch
   final GlobalKey _stackKey = GlobalKey();
   final List<_TouchRipple> _ripples = [];
+
+  double _progress = 0.0;
 
   @override
   void initState() {
@@ -49,7 +46,7 @@ class _WelcomePageState extends State<WelcomePage>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Intro text/button animations (staggered)
+    // Intro animations
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -78,20 +75,33 @@ class _WelcomePageState extends State<WelcomePage>
       ),
     );
 
-    // Animated gradient background
+    // Animated background
     _bgController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat();
 
-    // Blinking "Get Started" button every 2 seconds
-    _blinkController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    _blinkOpacity = Tween<double>(begin: 0.45, end: 1.0).animate(
-      CurvedAnimation(parent: _blinkController, curve: Curves.easeInOut),
-    );
+    // 3-second progress animation
+    _loadingController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..addListener(() {
+            setState(() {
+              _progress = _loadingController.value * 100;
+            });
+          })
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
+              );
+            }
+          });
+
+    // Start loading animation after intro
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      _loadingController.forward();
+    });
   }
 
   @override
@@ -99,17 +109,15 @@ class _WelcomePageState extends State<WelcomePage>
     _pulseController.dispose();
     _introController.dispose();
     _bgController.dispose();
-    _blinkController.dispose();
+    _loadingController.dispose();
     for (final r in _ripples) {
       r.controller.dispose();
     }
     super.dispose();
   }
 
-  // Helper: animated gradient for background
   LinearGradient _animatedGradient(double t) {
-    // t oscillates 0..1; drive alignments smoothly with sin wave
-    final phase = (math.sin(t * 2 * math.pi) + 1) / 2; // 0..1
+    final phase = (math.sin(t * 2 * math.pi) + 1) / 2;
     return LinearGradient(
       begin: Alignment.lerp(Alignment.topLeft, Alignment.bottomRight, phase)!,
       end: Alignment.lerp(Alignment.bottomRight, Alignment.topLeft, phase)!,
@@ -117,7 +125,6 @@ class _WelcomePageState extends State<WelcomePage>
     );
   }
 
-  // Helper: animated letter for YOUBOOK.com
   Widget _animatedLetter({
     required String char,
     required Color color,
@@ -145,7 +152,6 @@ class _WelcomePageState extends State<WelcomePage>
     );
   }
 
-  // Spawn a ripple at the tapped location
   void _spawnRipple(Offset globalPos) {
     final box = _stackKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null) return;
@@ -184,7 +190,6 @@ class _WelcomePageState extends State<WelcomePage>
           body: Stack(
             key: _stackKey,
             children: [
-              // Background + content
               Container(
                 decoration: BoxDecoration(
                   gradient: _animatedGradient(_bgController.value),
@@ -194,7 +199,7 @@ class _WelcomePageState extends State<WelcomePage>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Logo with pulse + glow
+                        // Logo animation
                         ScaleTransition(
                           scale: _scaleAnim,
                           child: AnimatedBuilder(
@@ -231,7 +236,7 @@ class _WelcomePageState extends State<WelcomePage>
 
                         const SizedBox(height: 50),
 
-                        // Welcome text: slide + fade in
+                        // Welcome text
                         SlideTransition(
                           position: _welcomeOffset,
                           child: FadeTransition(
@@ -250,7 +255,7 @@ class _WelcomePageState extends State<WelcomePage>
 
                         const SizedBox(height: 10),
 
-                        // YOUBOOK.com letters animating in a wave
+                        // YOUBOOK.com
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -300,47 +305,62 @@ class _WelcomePageState extends State<WelcomePage>
                           ],
                         ),
 
-                        const SizedBox(height: 250),
+                        const SizedBox(height: 180),
 
-                        // Get Started Button: intro fade/scale + continuous blink
+                        // Attractive progress area
                         FadeTransition(
                           opacity: _buttonOpacity,
                           child: ScaleTransition(
                             scale: _buttonScale,
-                            child: FadeTransition(
-                              opacity: _blinkOpacity, // blink every 2 seconds
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const RoleSelectionPage(),
-                                      //LoginPage(),
+                            child: SizedBox(
+                              width: 220,
+                              child: Stack(
+                                alignment: Alignment.centerLeft,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: LinearProgressIndicator(
+                                      value: _progress / 100,
+                                      minHeight: 10,
+                                      backgroundColor: Colors.white24,
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
+                                            AppColors.accentOrange,
+                                          ),
                                     ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: AppColors.textWhite,
-                                  shadowColor: Colors.transparent,
-                                  side: const BorderSide(
-                                    color: AppColors.accentOrange,
-                                    width: 1.5,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
+                                  // Bus icon moving along the bar
+                                  AnimatedBuilder(
+                                    animation: _loadingController,
+                                    builder: (context, _) {
+                                      return Positioned(
+                                        left: (_loadingController.value * 200)
+                                            .clamp(0, 200),
+                                        top: -6,
+                                        child: Transform.rotate(
+                                          angle: 0,
+                                          child: const Icon(
+                                            Icons.directions_bus_rounded,
+                                            color: Colors.white,
+                                            size: 28,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 45,
-                                    vertical: 14,
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Get Started",
-                                  style: TextStyle(fontSize: 16),
-                                ),
+                                ],
                               ),
                             ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+                        Text(
+                          "${_progress.toInt()}%",
+                          style: const TextStyle(
+                            color: AppColors.textWhite,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -358,7 +378,7 @@ class _WelcomePageState extends State<WelcomePage>
                 ),
               ),
 
-              // Raw pointer listener to spawn ripples on touch (anywhere on screen)
+              // Tap ripple effect
               Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: (e) => _spawnRipple(e.position),
@@ -371,24 +391,21 @@ class _WelcomePageState extends State<WelcomePage>
   }
 }
 
-// Helpers: ripple data + painter
-
+// Ripple helpers
 class _TouchRipple {
   _TouchRipple({required this.position, required this.controller});
-
   final Offset position;
   final AnimationController controller;
 }
 
 class _RipplePainter extends CustomPainter {
   _RipplePainter(this.ripples);
-
   final List<_TouchRipple> ripples;
 
   @override
   void paint(Canvas canvas, Size size) {
     for (final r in ripples) {
-      final t = r.controller.value; // 0..1
+      final t = r.controller.value;
       final radius = (size.longestSide * 0.28) * t;
       final fill = Paint()
         ..color = Colors.white.withOpacity(0.08 * (1 - t))
@@ -397,7 +414,6 @@ class _RipplePainter extends CustomPainter {
         ..color = Colors.white.withOpacity(0.25 * (1 - t))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0;
-
       canvas.drawCircle(r.position, radius, fill);
       canvas.drawCircle(r.position, radius, stroke);
     }

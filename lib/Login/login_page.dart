@@ -252,6 +252,7 @@ class _LoginPageState extends State<LoginPage> {
                           child: Column(
                             children: [
                               // Email Field
+                              // Email Field
                               TextFormField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
@@ -270,16 +271,20 @@ class _LoginPageState extends State<LoginPage> {
                                   return null;
                                 },
                                 decoration: InputDecoration(
-                                  hintText: "Email",
+                                  labelText: "Email",
+                                  labelStyle: const TextStyle(
+                                    color: Colors.white70,
+                                  ),
+                                  floatingLabelStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.email,
                                     color: cs.onPrimary.withOpacity(0.75),
                                   ),
                                   filled: true,
                                   fillColor: Colors.transparent,
-                                  hintStyle: TextStyle(
-                                    color: cs.onPrimary.withOpacity(0.75),
-                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                     vertical: 16,
@@ -318,7 +323,14 @@ class _LoginPageState extends State<LoginPage> {
                                   return null;
                                 },
                                 decoration: InputDecoration(
-                                  hintText: "Password",
+                                  labelText: "Password",
+                                  labelStyle: const TextStyle(
+                                    color: AppColors.textWhite,
+                                  ),
+                                  floatingLabelStyle: const TextStyle(
+                                    color: AppColors.textWhite,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.lock,
                                     color: cs.onPrimary.withOpacity(0.75),
@@ -338,9 +350,6 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   filled: true,
                                   fillColor: Colors.transparent,
-                                  hintStyle: TextStyle(
-                                    color: cs.onPrimary.withOpacity(0.75),
-                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                     vertical: 16,
@@ -398,8 +407,8 @@ class _LoginPageState extends State<LoginPage> {
               child: SafeArea(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 70,
+                    horizontal: 10,
+                    vertical: 20,
                   ),
                   color: cs.surface,
                   child: Column(
@@ -419,7 +428,7 @@ class _LoginPageState extends State<LoginPage> {
                             ? CircularProgressIndicator(color: cs.onSecondary)
                             : const Text(
                                 "Login",
-                                style: TextStyle(fontSize: 18),
+                                style: TextStyle(fontSize: 16),
                               ),
                       ),
 

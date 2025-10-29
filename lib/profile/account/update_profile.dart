@@ -73,7 +73,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     setState(() => _loading = true);
 
-    // Simulate delay
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
@@ -118,13 +117,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _field({
     required BuildContext context,
     required IconData icon,
-    required String hint,
+    required String label,
     required TextEditingController controller,
     String? Function(String?)? validator,
     TextInputType? type,
     List<TextInputFormatter>? inputFormatters,
   }) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return TextFormField(
       controller: controller,
       validator: validator,
@@ -134,8 +135,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
       style: TextStyle(color: cs.onSurface),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: cs.onSurface.withOpacity(0.85)),
-        hintText: hint,
-        hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+
+        // ✅ Label behaves like "Full name" from your other input
+        labelText: label,
+        labelStyle: TextStyle(
+          color: isDark ? AppColors.textWhite : AppColors.textBlack,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: isDark ? AppColors.textWhite : AppColors.textBlack,
+          fontWeight: FontWeight.w600,
+        ),
+
         filled: true,
         fillColor: cs.surface,
         isDense: true,
@@ -143,13 +153,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
           horizontal: 12,
           vertical: 14,
         ),
-        border: OutlineInputBorder(
+
+        enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: cs.onSurface.withOpacity(0.25)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: cs.secondary, width: 2),
+          borderSide: const BorderSide(color: AppColors.accentOrange, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
         ),
       ),
     );
@@ -209,7 +228,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _field(
                   context: context,
                   icon: Icons.person,
-                  hint: 'Full Name',
+                  label: 'Full Name',
                   controller: _nameCtrl,
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Enter your name'
@@ -219,7 +238,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _field(
                   context: context,
                   icon: Icons.badge,
-                  hint: 'CNIC',
+                  label: 'CNIC',
                   controller: _cnicCtrl,
                   type: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -236,7 +255,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _field(
                   context: context,
                   icon: Icons.flag_outlined,
-                  hint: 'Country',
+                  label: 'Country',
                   controller: _countryCtrl,
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Enter country' : null,
@@ -245,7 +264,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _field(
                   context: context,
                   icon: Icons.map_outlined,
-                  hint: 'State/Province',
+                  label: 'State/Province',
                   controller: _stateCtrl,
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Enter state/province'
@@ -255,7 +274,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _field(
                   context: context,
                   icon: Icons.location_city,
-                  hint: 'City',
+                  label: 'City',
                   controller: _cityCtrl,
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Enter city' : null,
@@ -264,7 +283,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 _field(
                   context: context,
                   icon: Icons.location_on,
-                  hint: 'Address',
+                  label: 'Address',
                   controller: _addressCtrl,
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Enter address' : null,
@@ -272,7 +291,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 const SizedBox(height: 26),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: _loading ? null : _updateProfile,
                     style: ElevatedButton.styleFrom(
@@ -286,7 +305,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ? CircularProgressIndicator(color: cs.onSecondary)
                         : const Text(
                             'Update Profile',
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textWhite,
+                            ),
                           ),
                   ),
                 ),
@@ -313,8 +335,8 @@ Future<void> _showSuccessPopup(BuildContext context) async {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 96,
-              height: 96,
+              width: 80,
+              height: 80,
               decoration: const BoxDecoration(
                 color: AppColors.circleGreen,
                 shape: BoxShape.circle,
@@ -327,13 +349,9 @@ Future<void> _showSuccessPopup(BuildContext context) async {
             ),
             const SizedBox(height: 24),
             Text(
-              '✅ Profile updated successfully!',
+              'Profile updated successfully!',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: cs.onSurface,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: cs.onSurface, fontSize: 18),
             ),
           ],
         ),
