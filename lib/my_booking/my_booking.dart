@@ -104,7 +104,7 @@ class _MyBookingPageState extends State<MyBookingPage> {
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
-                  color: cs.primary.withOpacity(0.1),
+                  color: cs.primary.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(

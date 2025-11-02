@@ -1,7 +1,37 @@
+import 'package:final_year_project/services_details/bus_details/bus_seat_layout.dart';
 import 'package:final_year_project/services_details/service_confirmation/service_confirmation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:final_year_project/color_schema/app_colors.dart';
+
+// Custom CNIC Input Formatter
+class CnicInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final text = newValue.text.replaceAll('-', '');
+    String newText = '';
+
+    if (text.length > 5) {
+      newText += text.substring(0, 5) + '-';
+      if (text.length > 12) {
+        newText += text.substring(5, 12) + '-';
+        newText += text.substring(12);
+      } else {
+        newText += text.substring(5);
+      }
+    } else {
+      newText = text;
+    }
+
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
+    );
+  }
+}
 
 class AddBusDetailsScreen extends StatefulWidget {
   const AddBusDetailsScreen({Key? key}) : super(key: key);
@@ -15,7 +45,9 @@ class AddBusDetailsScreen extends StatefulWidget {
 }
 
 class _AddBusDetailsScreenState extends State<AddBusDetailsScreen> {
+  final _formKey = GlobalKey<FormState>(); // Added for form validation
   bool _isAgreedToTerms = false;
+  bool _isSeatLayoutConfigured = false; // Added for seat layout checkmark
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _applicationController = TextEditingController();
   final TextEditingController _departureController = TextEditingController();
@@ -73,7 +105,8 @@ class _AddBusDetailsScreenState extends State<AddBusDetailsScreen> {
       time.hour,
       time.minute,
     );
-    controller.text = '${dateTime.toLocal()}'.split('.')[0];
+    controller.text =
+        '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -96,7 +129,6 @@ class _AddBusDetailsScreenState extends State<AddBusDetailsScreen> {
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(45),
           child: AppBar(
-            toolbarHeight: 45,
             elevation: 0,
             title: const Text(
               'Add Bus Details',
@@ -114,41 +146,53 @@ class _AddBusDetailsScreenState extends State<AddBusDetailsScreen> {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _BusInformationSection(
-                  selectedBusType: _selectedBusType,
-                  onBusTypeChanged: (value) {
-                    setState(() {
-                      _selectedBusType = value;
-                    });
-                  },
-                ),
-                const _DriverInformationSection(),
-                const _ProprietorInformationSection(),
-                const _RouteInformationSection(),
-                const _OfficeTerminalSection(),
-                _ScheduleDetailsSection(
-                  departureController: _departureController,
-                  arrivalController: _arrivalController,
-                  onPickDateTime: _pickDateTime,
-                ),
-                _SeatLayoutSection(
-                  priceController: _priceController,
-                  applicationController: _applicationController,
-                ),
-                const _OperationalControlsSection(),
-                _DisclaimerSection(
-                  isAgreed: _isAgreedToTerms,
-                  onChanged: (newValue) {
-                    setState(() {
-                      _isAgreedToTerms = newValue ?? false;
-                    });
-                  },
-                ),
-                const SizedBox(height: 80),
-              ],
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _BusInformationSection(
+                    selectedBusType: _selectedBusType,
+                    onBusTypeChanged: (value) {
+                      setState(() {
+                        _selectedBusType = value;
+                      });
+                    },
+                    formKey: _formKey,
+                  ),
+                  _DriverInformationSection(formKey: _formKey),
+                  _ProprietorInformationSection(formKey: _formKey),
+                  _RouteInformationSection(formKey: _formKey),
+                  _OfficeTerminalSection(formKey: _formKey),
+                  _ScheduleDetailsSection(
+                    departureController: _departureController,
+                    arrivalController: _arrivalController,
+                    onPickDateTime: _pickDateTime,
+                    formKey: _formKey,
+                  ),
+                  _SeatLayoutSection(
+                    priceController: _priceController,
+                    applicationController: _applicationController,
+                    isSeatLayoutConfigured: _isSeatLayoutConfigured,
+                    onSeatLayoutConfigured: (configured) {
+                      setState(() {
+                        _isSeatLayoutConfigured = configured;
+                      });
+                    },
+                    formKey: _formKey,
+                  ),
+                  const _OperationalControlsSection(),
+                  _DisclaimerSection(
+                    isAgreed: _isAgreedToTerms,
+                    onChanged: (newValue) {
+                      setState(() {
+                        _isAgreedToTerms = newValue ?? false;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 80),
+                ],
+              ),
             ),
           ),
         ),
@@ -156,7 +200,18 @@ class _AddBusDetailsScreenState extends State<AddBusDetailsScreen> {
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton(
             onPressed: () {
-              // ✅ Open the popup dialog directly
+              if (!(_formKey.currentState?.validate() ?? false)) {
+                return; // Stop if form fields are not valid
+              }
+              if (!_isAgreedToTerms) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please check the agreement.'),
+                    backgroundColor: AppColors.errorRed,
+                  ),
+                );
+                return;
+              }
               showServiceConfirmationDialog(context);
             },
             style: ElevatedButton.styleFrom(
@@ -235,6 +290,10 @@ class CustomInputField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTap;
   final int maxLines;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? Function(String?)? customValidator;
+  final GlobalKey<FormState> formKey; // Added formKey
 
   const CustomInputField({
     super.key,
@@ -247,6 +306,10 @@ class CustomInputField extends StatefulWidget {
     this.onChanged,
     this.onTap,
     this.maxLines = 1,
+    this.keyboardType,
+    this.inputFormatters,
+    this.customValidator,
+    required this.formKey, // Made formKey required
   });
 
   @override
@@ -272,25 +335,34 @@ class _CustomInputFieldState extends State<CustomInputField> {
           readOnly: widget.readOnly,
           onTap: widget.onTap,
           maxLines: widget.maxLines,
-          keyboardType: widget.labelEn == 'Price Per Seat'
-              ? TextInputType.number
-              : TextInputType.text,
-          inputFormatters: widget.labelEn == 'Price Per Seat'
-              ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))]
-              : [],
-          onChanged: widget.onChanged,
+          keyboardType: widget.keyboardType ?? TextInputType.text,
+          inputFormatters: widget.inputFormatters,
+          onChanged: (value) {
+            if (widget.onChanged != null) {
+              widget.onChanged!(value);
+            }
+            widget.formKey.currentState?.validate(); // Trigger live validation
+          },
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 16,
             fontWeight: FontWeight.normal,
           ),
+          validator: (value) {
+            if (widget.isRequired && (value == null || value.isEmpty)) {
+              return 'Enter the ${widget.labelEn}';
+            }
+            if (widget.customValidator != null) {
+              return widget.customValidator!(value);
+            }
+            return null;
+          },
           decoration: InputDecoration(
             labelText: '${widget.labelEn} (${widget.labelUr})',
             labelStyle: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
               fontWeight: _isFocused ? FontWeight.bold : FontWeight.normal,
             ),
-
             filled: true,
             fillColor: cs.surface,
             isDense: true,
@@ -309,6 +381,14 @@ class _CustomInputFieldState extends State<CustomInputField> {
                 color: AppColors.accentOrange,
                 width: 2,
               ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.errorRed, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.errorRed, width: 2),
             ),
           ),
         ),
@@ -338,10 +418,12 @@ Widget _sectionContainer({required List<Widget> children}) {
 class _BusInformationSection extends StatelessWidget {
   final String? selectedBusType;
   final ValueChanged<String?> onBusTypeChanged;
+  final GlobalKey<FormState> formKey;
 
   const _BusInformationSection({
     required this.selectedBusType,
     required this.onBusTypeChanged,
+    required this.formKey,
   });
 
   @override
@@ -350,12 +432,27 @@ class _BusInformationSection extends StatelessWidget {
       children: [
         const SectionHeader(
           titleEn: 'Bus Information',
-          titleUr: 'بس معلومات',
+          titleUr: 'بس کی معلومات',
           isRequired: true,
         ),
-        const CustomInputField(labelEn: 'Bus Name', labelUr: 'بس نام'),
-        const CustomInputField(labelEn: 'Bus Number', labelUr: 'بس نمبر'),
-        const CustomInputField(labelEn: 'Bus Color', labelUr: 'بس رنگ'),
+        CustomInputField(
+          labelEn: 'Bus Name',
+          labelUr: 'بس نام',
+          isRequired: true,
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'Bus Number',
+          labelUr: 'بس نمبر',
+          isRequired: true,
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'Bus Color',
+          labelUr: 'بس رنگ',
+          isRequired: true,
+          formKey: formKey,
+        ),
         const SizedBox(height: 6), // ✅ equal spacing
       ],
     );
@@ -363,79 +460,166 @@ class _BusInformationSection extends StatelessWidget {
 }
 
 class _DriverInformationSection extends StatelessWidget {
-  const _DriverInformationSection();
+  final GlobalKey<FormState> formKey;
+
+  const _DriverInformationSection({required this.formKey});
 
   @override
   Widget build(BuildContext context) {
     return _sectionContainer(
-      children: const [
-        SectionHeader(
+      children: [
+        const SectionHeader(
           titleEn: 'Driver Information',
-          titleUr: 'ڈرائیور معلوماتِ ',
+          titleUr: 'ڈرائیور کی معلومات',
           isRequired: true,
         ),
-        CustomInputField(labelEn: 'Driver Name', labelUr: 'ڈرائیور نام'),
+        CustomInputField(
+          labelEn: 'Driver Name',
+          labelUr: 'ڈرائیور نام',
+          isRequired: true,
+          formKey: formKey,
+        ),
         CustomInputField(
           labelEn: 'Driving Experience',
           labelUr: 'ڈرائیونگ تجربہ',
+          isRequired: true,
+          formKey: formKey,
         ),
-        CustomInputField(labelEn: 'Phone Number', labelUr: 'فون نمبر'),
-        CustomInputField(labelEn: 'CNIC', labelUr: 'قومی شناختی کارڈ نمبر'),
+        CustomInputField(
+          labelEn: 'Phone Number',
+          labelUr: 'فون نمبر',
+          isRequired: true,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(11),
+          ],
+          customValidator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter the Driver Phone Number';
+            }
+            if (!value.startsWith('03')) {
+              return 'Phone number must start with 03';
+            }
+            if (value.length != 11) {
+              return 'Phone number must be exactly 11 digits';
+            }
+            return null;
+          },
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'CNIC',
+          labelUr: 'قومی شناختی کارڈ نمبر',
+          isRequired: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            CnicInputFormatter(),
+            LengthLimitingTextInputFormatter(
+              15,
+            ), // 5 digits - 7 digits - 1 digit + 2 dashes = 15
+          ],
+          customValidator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter the Driver CNIC';
+            }
+            // CNIC pattern: XXXXX-XXXXXXX-X
+            if (!RegExp(r'^\d{5}-\d{7}-\d{1}$').hasMatch(value)) {
+              return 'Invalid CNIC format (e.g., XXXXX-XXXXXXX-X)';
+            }
+            return null;
+          },
+          formKey: formKey,
+        ),
       ],
     );
   }
 }
 
-// (The rest of your sections remain unchanged)
-
 class _ProprietorInformationSection extends StatelessWidget {
-  const _ProprietorInformationSection();
+  final GlobalKey<FormState> formKey;
+
+  const _ProprietorInformationSection({required this.formKey});
 
   @override
   Widget build(BuildContext context) {
     return _sectionContainer(
-      children: const [
-        SectionHeader(
+      children: [
+        const SectionHeader(
           titleEn: 'Proprietor Information',
           titleUr: 'مالک کی معلومات',
           isRequired: true,
         ),
-        CustomInputField(labelEn: 'Proprietor', labelUr: 'مالک'),
-        CustomInputField(labelEn: 'General Manager', labelUr: 'جنرل منیجر'),
-        CustomInputField(labelEn: 'Manager', labelUr: 'منیجر'),
-        CustomInputField(labelEn: 'Secretary', labelUr: 'سیکرٹری'),
+        CustomInputField(
+          labelEn: 'Proprietor',
+          labelUr: 'مالک',
+          isRequired: true,
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'General Manager',
+          labelUr: 'جنرل منیجر',
+          isRequired: true,
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'Manager',
+          labelUr: 'منیجر',
+          isRequired: true,
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'Secretary',
+          labelUr: 'سیکرٹری',
+          isRequired: true,
+          formKey: formKey,
+        ),
       ],
     );
   }
 }
 
 class _RouteInformationSection extends StatelessWidget {
-  const _RouteInformationSection();
+  final GlobalKey<FormState> formKey;
+
+  const _RouteInformationSection({required this.formKey});
 
   @override
   Widget build(BuildContext context) {
     return _sectionContainer(
-      children: const [
-        SectionHeader(
+      children: [
+        const SectionHeader(
           titleEn: 'Route Information',
           titleUr: 'معلوماتِ راستہ',
           isRequired: true,
         ),
-        CustomInputField(labelEn: 'From', labelUr: 'سے'),
-        CustomInputField(labelEn: 'To', labelUr: 'تک'),
+        CustomInputField(
+          labelEn: 'From',
+          labelUr: 'سے',
+          isRequired: true,
+          formKey: formKey,
+        ),
+        CustomInputField(
+          labelEn: 'To',
+          labelUr: 'تک',
+          isRequired: true,
+          formKey: formKey,
+        ),
       ],
     );
   }
 }
 
 class _OfficeTerminalSection extends StatelessWidget {
-  const _OfficeTerminalSection();
+  final GlobalKey<FormState> formKey;
+
+  const _OfficeTerminalSection({required this.formKey});
 
   @override
   Widget build(BuildContext context) {
     return _sectionContainer(
-      children: const [
-        SectionHeader(
+      children: [
+        const SectionHeader(
           titleEn: 'Office / Terminal Information',
           titleUr: 'دفتر / ٹرمینل کی معلومات',
           isRequired: true,
@@ -443,10 +627,14 @@ class _OfficeTerminalSection extends StatelessWidget {
         CustomInputField(
           labelEn: 'Boarding Office/Terminal',
           labelUr: 'سوار ہونے کا دفتر/اڈا',
+          isRequired: true,
+          formKey: formKey,
         ),
         CustomInputField(
           labelEn: 'Arrival Office/Terminal',
           labelUr: 'منزل پر اترنے کا دفتر/اڈا',
+          isRequired: true,
+          formKey: formKey,
         ),
       ],
     );
@@ -457,11 +645,13 @@ class _ScheduleDetailsSection extends StatelessWidget {
   final TextEditingController departureController;
   final TextEditingController arrivalController;
   final Future<void> Function(TextEditingController) onPickDateTime;
+  final GlobalKey<FormState> formKey;
 
   const _ScheduleDetailsSection({
     required this.departureController,
     required this.arrivalController,
     required this.onPickDateTime,
+    required this.formKey,
   });
 
   @override
@@ -470,7 +660,7 @@ class _ScheduleDetailsSection extends StatelessWidget {
       children: [
         const SectionHeader(
           titleEn: 'Schedule Details',
-          titleUr: 'شیڈول تفصیلات',
+          titleUr: 'شیڈول کی تفصیلات',
           isRequired: true,
         ),
         CustomInputField(
@@ -480,6 +670,8 @@ class _ScheduleDetailsSection extends StatelessWidget {
           readOnly: true,
           suffixIcon: const Icon(Icons.calendar_month_rounded),
           onTap: () => onPickDateTime(departureController),
+          isRequired: true,
+          formKey: formKey,
         ),
         CustomInputField(
           labelEn: 'Arrival Date & Time',
@@ -488,6 +680,8 @@ class _ScheduleDetailsSection extends StatelessWidget {
           readOnly: true,
           suffixIcon: const Icon(Icons.calendar_month_rounded),
           onTap: () => onPickDateTime(arrivalController),
+          isRequired: true,
+          formKey: formKey,
         ),
       ],
     );
@@ -497,10 +691,16 @@ class _ScheduleDetailsSection extends StatelessWidget {
 class _SeatLayoutSection extends StatelessWidget {
   final TextEditingController priceController;
   final TextEditingController applicationController;
+  final bool isSeatLayoutConfigured;
+  final ValueChanged<bool> onSeatLayoutConfigured;
+  final GlobalKey<FormState> formKey;
 
   const _SeatLayoutSection({
     required this.priceController,
     required this.applicationController,
+    required this.isSeatLayoutConfigured,
+    required this.onSeatLayoutConfigured,
+    required this.formKey,
   });
 
   @override
@@ -513,11 +713,14 @@ class _SeatLayoutSection extends StatelessWidget {
           isRequired: true,
         ),
         GestureDetector(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const Placeholder()),
+              MaterialPageRoute(builder: (context) => SeatLayoutConfigPage()),
             );
+            if (result == true) {
+              onSeatLayoutConfigured(true);
+            }
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -544,7 +747,13 @@ class _SeatLayoutSection extends StatelessWidget {
                       ).colorScheme.onSurface.withOpacity(0.9),
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                  isSeatLayoutConfigured
+                      ? const Icon(
+                          Icons.check_circle,
+                          color: AppColors.accentOrange,
+                          size: 20,
+                        )
+                      : const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                 ],
               ),
             ),
@@ -554,12 +763,19 @@ class _SeatLayoutSection extends StatelessWidget {
           labelEn: 'Price Per Seat',
           labelUr: 'فی نشست قیمت',
           controller: priceController,
+          isRequired: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+          ],
+          formKey: formKey,
         ),
         CustomInputField(
           labelEn: 'Application Charges',
           labelUr: 'ایپلیکیشن چارجز',
           controller: applicationController,
           readOnly: true,
+          formKey: formKey,
         ),
       ],
     );
